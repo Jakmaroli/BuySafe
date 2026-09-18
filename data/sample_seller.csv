@@ -1,0 +1,8 @@
+asin,sku,product_title,category,unit_cost,selling_price,current_stock,monthly_sales_velocity,lead_time_days,fba_fee,storage_fee_monthly,bsr,rating,review_count,return_rate
+B08N5WRWNW,SKU-AUDIO-001,Wireless Noise Cancelling Over-Ear Headphones,Electronics,28.50,79.99,180,145.0,25,7.20,0.55,3400,4.6,1240,0.03
+B07XJ8C8F7,SKU-KITCHEN-002,Stainless Steel Insulated French Press 34oz,Home & Kitchen,11.20,34.95,45,95.0,18,5.40,0.40,8200,4.7,850,0.02
+B09V7Y5M12,SKU-FITNESS-003,Adjustable Non-Slip Yoga Mat 6mm,Sports & Outdoors,8.90,29.99,320,40.0,30,6.10,0.85,45000,4.2,310,0.07
+B0B123XYZ9,SKU-BEAUTY-004,Organic Vitamin C Facial Serum 2oz,Beauty & Personal Care,4.10,19.99,60,210.0,14,3.80,0.20,1200,4.8,2450,0.01
+B09T8R3K21,SKU-OFFICE-005,Ergonomic Memory Foam Lumbar Support Pillow,Office Products,13.75,39.99,15,80.0,21,5.90,0.65,12400,4.4,620,0.05
+B08K9L4M22,SKU-TOYS-006,STEM Magnetic Building Tiles Set (100 Pcs),Toys & Games,14.50,42.99,210,130.0,35,6.80,0.75,5600,4.7,1890,0.02
+B07Z4W9Q11,SKU-PHONE-007,Fast Wireless Charging Stand 15W,Cell Phones & Accessories,7.20,24.99,400,35.0,20,4.50,0.30,62000,3.9,410,0.11
