@@ -61,7 +61,7 @@ export default function EventTimeline({
 
           {/* Scheduled CSV Events */}
           {eventTimeline.map((item, idx) => {
-            const isIncome = item.type === "amazon_payout" || item.type === "income";
+            const isIncome = ["amazon_payout", "refund", "income", "inflow"].includes(item.type?.toLowerCase());
             const isSelected = selectedEventIndex === idx;
 
             return (
