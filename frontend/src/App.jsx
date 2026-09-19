@@ -16,6 +16,7 @@ import VisualWaterfall from "./VisualWaterfall";
 import StressTestMatrix from "./StressTestMatrix";
 import EventTimeline from "./EventTimeline";
 import DecisionReportModal from "./DecisionReportModal";
+import EngineDebuggerModal from "./EngineDebuggerModal";
 import { DEMO_SELLERS } from "./sellers";
 import "./App.css";
 
@@ -358,8 +359,7 @@ function App() {
 
   // Diagnostics / Calculation Trace Modal
   const [showTraceModal, setShowTraceModal] = useState(false);
-  const [activeModalTab, setActiveModalTab] = useState("trace");
-  const [copiedTrace, setCopiedTrace] = useState(false);
+  const [debuggerTab, setDebuggerTab] = useState("proof");
 
   // Bedrock Offline Simulation Toggle (Scenario 5)
   const [forceAiOffline, setForceAiOffline] = useState(false);
@@ -687,17 +687,20 @@ function App() {
   const excessAboveLimit = maxSafePurchase !== null ? Math.max(0, purchaseAmount - maxSafePurchase) : null;
   const sliderMax = Math.max(Number(currentCash) || 100000, Number(maxSafePurchase) || 100000, Number(purchaseAmount) || 0) * 1.3;
 
-  // Copy Calculation Trace or AI Advisory
-  const copyTraceLog = () => {
-    if (!result) return;
-    const text =
-      activeModalTab === "trace"
-        ? JSON.stringify(result.calculation_trace || result, null, 2)
-        : result.ai_explanation || "AI Explanation powered by Amazon Bedrock.";
-    navigator.clipboard.writeText(text);
-    setCopiedTrace(true);
-    setTimeout(() => setCopiedTrace(false), 2000);
-  };
+  // Chart Analytical Reference Items
+  const troughChartItem = useMemo(() => {
+    if (!result?.min_balance_date || !chartData?.length) return null;
+    return chartData.find(
+      (p) => p.dateKey === result.min_balance_date || p.date === result.min_balance_date
+    );
+  }, [result?.min_balance_date, chartData]);
+
+  const recoveryChartItem = useMemo(() => {
+    if (!result?.earliest_safe_date || !chartData?.length) return null;
+    return chartData.find(
+      (p) => p.dateKey === result.earliest_safe_date || p.date === result.earliest_safe_date
+    );
+  }, [result?.earliest_safe_date, chartData]);
 
   // Authentication Handlers
   const handleLogin = (sellerProfile) => {
@@ -862,6 +865,19 @@ function App() {
               📊 Full CSV
             </button>
           </div>
+
+          {/* Engine Proof & Diagnostics Trigger */}
+          <button
+            type="button"
+            className="dock-export-report-btn engine-debugger-nav-btn"
+            onClick={() => {
+              setDebuggerTab("proof");
+              setShowTraceModal(true);
+            }}
+            title="Inspect 7-step pipeline execution and ₹1 mathematical boundary proof"
+          >
+            🎯 Engine Proof
+          </button>
 
           {/* Export Decision Report Button */}
           <button
@@ -1064,6 +1080,18 @@ function App() {
                 <span>₹0 Committed</span>
                 <span>Safe Threshold: ₹{maxSafePurchase.toLocaleString("en-IN")}</span>
               </div>
+
+              {/* Instant Boundary Proof & Pipeline Inspection CTA */}
+              <button
+                type="button"
+                className="boundary-proof-trigger-btn depth-layer-front"
+                onClick={() => {
+                  setDebuggerTab("proof");
+                  setShowTraceModal(true);
+                }}
+              >
+                🎯 Inspect ₹1 Proof & 7-Step Pipeline
+              </button>
             </div>
           </SpotlightTiltCard>
         </section>
@@ -1418,6 +1446,36 @@ function App() {
                             fontWeight: 600,
                           }}
                         />
+                        {troughChartItem && (
+                          <ReferenceLine
+                            x={troughChartItem.date}
+                            stroke="#D92D20"
+                            strokeDasharray="3 3"
+                            strokeWidth={1.5}
+                            label={{
+                              value: `Trough (₹${(troughChartItem.cash / 1000).toFixed(0)}k)`,
+                              position: "insideTopLeft",
+                              fill: "#D92D20",
+                              fontSize: 10,
+                              fontWeight: 600,
+                            }}
+                          />
+                        )}
+                        {!isSafe && recoveryChartItem && (
+                          <ReferenceLine
+                            x={recoveryChartItem.date}
+                            stroke="#027A48"
+                            strokeDasharray="3 3"
+                            strokeWidth={1.5}
+                            label={{
+                              value: "Recovery",
+                              position: "insideTopRight",
+                              fill: "#027A48",
+                              fontSize: 10,
+                              fontWeight: 600,
+                            }}
+                          />
+                        )}
                         <Line
                           type="monotone"
                           dataKey="cash"
@@ -1576,7 +1634,7 @@ function App() {
               type="button"
               className="open-diagnostics-btn"
               onClick={() => {
-                setActiveModalTab("trace");
+                setDebuggerTab("ledger");
                 setShowTraceModal(true);
               }}
             >
@@ -1624,7 +1682,7 @@ function App() {
               type="button"
               className="open-diagnostics-btn"
               onClick={() => {
-                setActiveModalTab("ai");
+                setDebuggerTab("integrity");
                 setShowTraceModal(true);
               }}
             >
@@ -1732,179 +1790,23 @@ function App() {
       </main>
 
       {/* =========================================================================
-          DEEP CALCULATION TRACE DIAGNOSTICS MODAL (Auralis Style)
+          AURALIS-GRADE FINANCIAL ENGINE DIAGNOSTICS MODAL
           ========================================================================= */}
       {showTraceModal && result && (
-        <div className="modal-backdrop" onClick={() => setShowTraceModal(false)}>
-          <div className="modal-card-window" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-window-header">
-              <div className="modal-brand-left">
-                <span className="modal-shield">🛡️</span>
-                <div>
-                  <h3>BuySafe Decision Diagnostics</h3>
-                  <p>Auralis-Style Step-by-Step Ledger Math Trace</p>
-                </div>
-              </div>
-              <button type="button" className="window-close-btn" onClick={() => setShowTraceModal(false)}>
-                ✕
-              </button>
-            </div>
-
-            <div className="modal-window-tabs">
-              <button
-                type="button"
-                className={`window-tab ${activeModalTab === "trace" ? "active" : ""}`}
-                onClick={() => setActiveModalTab("trace")}
-              >
-                📊 Calculation Trace (Diagnostics)
-              </button>
-              <button
-                type="button"
-                className={`window-tab ${activeModalTab === "ai" ? "active" : ""}`}
-                onClick={() => setActiveModalTab("ai")}
-              >
-                🤖 Amazon Bedrock Advisory
-              </button>
-              <button
-                type="button"
-                className="copy-trace-btn"
-                onClick={copyTraceLog}
-                title="Copy Full Trace to Clipboard"
-              >
-                {copiedTrace ? "✓ Copied!" : "📋 Copy Log"}
-              </button>
-            </div>
-
-            <div className="modal-window-body">
-              {activeModalTab === "trace" ? (
-                <div className="trace-view-container">
-                  <div className={`trace-summary-banner ${isSafe ? "banner-safe" : "banner-unsafe"}`}>
-                    <span className="summary-symbol">{isSafe ? "✓" : "⚠️"}</span>
-                    <div>
-                      <strong>{isSafe ? "VERDICT: SAFE TO BUY" : "VERDICT: DON'T BUY (RESERVE BREACH)"}</strong>
-                      <p>
-                        Projected Floor: <strong>₹{minProjectedCash.toLocaleString("en-IN")}</strong>{" "}
-                        {isSafe ? "≥" : "<"}{" "}
-                        Reserve: <strong>₹{reserveThreshold.toLocaleString("en-IN")}</strong>
-                        {" • "}
-                        {isSafe ? (
-                          <span className="text-emerald">Buffer: +₹{(minProjectedCash - reserveThreshold).toLocaleString("en-IN")}</span>
-                        ) : (
-                          <span className="text-rose">Shortfall: -₹{(reserveThreshold - minProjectedCash).toLocaleString("en-IN")}</span>
-                        )}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* 4 Summary Stats */}
-                  <div className="trace-quad-stats">
-                    <div className="trace-stat-box">
-                      <span className="stat-dim">STARTING CASH</span>
-                      <strong>₹{currentCash.toLocaleString("en-IN")}</strong>
-                    </div>
-                    <div className="trace-stat-box">
-                      <span className="stat-dim">ORDER DEDUCTED</span>
-                      <strong className="text-rose">-₹{purchaseAmount.toLocaleString("en-IN")}</strong>
-                    </div>
-                    <div className="trace-stat-box">
-                      <span className="stat-dim">TROUGH BOTTOM</span>
-                      <strong className={isSafe ? "text-emerald" : "text-rose"}>
-                        ₹{minProjectedCash.toLocaleString("en-IN")}
-                      </strong>
-                      <small>on {result?.min_balance_date || "N/A"}</small>
-                    </div>
-                    <div className="trace-stat-box">
-                      <span className="stat-dim">MAX SAFE LIMIT</span>
-                      <strong className="text-indigo">₹{maxSafePurchase.toLocaleString("en-IN")}</strong>
-                      <small>Binary search solved</small>
-                    </div>
-                  </div>
-
-                  {/* Sequential Ledger Table */}
-                  <div className="ledger-table-scroll">
-                    <table className="diagnostics-table">
-                      <thead>
-                        <tr>
-                          <th>#</th>
-                          <th>Date</th>
-                          <th>Ledger Event</th>
-                          <th className="text-right">Cash Delta</th>
-                          <th className="text-right">Balance After</th>
-                          <th>Safety Diagnostic</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {(result.calculation_trace?.steps || []).map((st) => (
-                          <tr key={st.step} className={st.is_trough ? "trough-highlight-row" : ""}>
-                            <td>{st.step}</td>
-                            <td>{st.date}</td>
-                            <td>
-                              <strong>{st.action}</strong>
-                              {st.is_trough && <span className="trough-tag-pill">⚠️ Cash Floor</span>}
-                            </td>
-                            <td className={`text-right ${st.delta > 0 ? "text-emerald" : st.delta < 0 ? "text-rose" : ""}`}>
-                              {st.delta > 0 ? `+₹${st.delta.toLocaleString("en-IN")}` : st.delta < 0 ? `-₹${Math.abs(st.delta).toLocaleString("en-IN")}` : "—"}
-                            </td>
-                            <td className="text-right">
-                              <strong>₹{Number(st.balance).toLocaleString("en-IN")}</strong>
-                            </td>
-                            <td>
-                              {st.note ? (
-                                <span className="diagnostic-note highlight">{st.note}</span>
-                              ) : st.balance >= reserveThreshold ? (
-                                <span className="diagnostic-note safe">✓ Buffer protected</span>
-                              ) : (
-                                <span className="diagnostic-note unsafe">⚠️ Buffer breached</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Judge Verification Note */}
-                  <div className="judge-verification-card">
-                    <span className="judge-gavel">⚖️</span>
-                    <div>
-                      <strong>Hackathon Judge Verification:</strong>
-                      <p>
-                        Zero machine learning guesswork was used in this decision. Every value is derived from deterministic cash flow projection and integer binary search.
-                        At exactly <strong>₹{maxSafePurchase.toLocaleString("en-IN")}</strong>, cash floor meets reserve. At <strong>₹{(maxSafePurchase + 1).toLocaleString("en-IN")}</strong>, it breaches.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="ai-modal-view">
-                  <div className="ai-modal-status-badge">
-                    {forceAiOffline || !result.ai_explanation ? (
-                      <span className="badge-offline">🛡️ Bedrock Fallback Active (Zero Cloud Dependency)</span>
-                    ) : (
-                      <span className="badge-online">🤖 Amazon Bedrock Live (Claude 3 Haiku)</span>
-                    )}
-                  </div>
-
-                  <div className="ai-narrative-window">
-                    <pre className="ai-window-pre">
-                      {result.ai_explanation ||
-                        `### 🛡️ BuySafe AI Financial Advisory\n\n**Decision: ${isSafe ? "SAFE TO BUY" : "DON'T BUY (Liquidity Risk)"}**\n\n- **Safety Buffer:** Projected cash floor is ₹${minProjectedCash.toLocaleString("en-IN")} vs ₹${reserveThreshold.toLocaleString("en-IN")} reserve.\n- **Order Capacity:** The deterministic financial engine calculates maximum safe order today is ₹${maxSafePurchase.toLocaleString("en-IN")}.\n- **Architecture Rule:** Deterministic engine decides. Amazon Bedrock explains.`}
-                    </pre>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="modal-window-footer">
-              <button type="button" className="btn-copy-trace" onClick={copyTraceLog}>
-                {copiedTrace ? "✓ Copied to Clipboard!" : "📋 Copy Audit Log"}
-              </button>
-              <button type="button" className="btn-close-window" onClick={() => setShowTraceModal(false)}>
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
+        <EngineDebuggerModal
+          isOpen={showTraceModal}
+          onClose={() => setShowTraceModal(false)}
+          result={result}
+          currentCash={currentCash}
+          reserveThreshold={reserveThreshold}
+          purchaseAmount={purchaseAmount}
+          onApplyBoundaryPurchase={(boundaryAmount) => {
+            handlePurchaseChange(boundaryAmount);
+          }}
+          aiExplanation={aiExplanation || result.ai_explanation}
+          datasetStats={datasetStats}
+          initialTab={debuggerTab}
+        />
       )}
 
       {/* CSV Raw Data Preview Modal */}
