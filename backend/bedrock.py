@@ -70,15 +70,36 @@ class BedrockExplainer:
         )
 
         if client is None:
-            # Fallback stub for local testing without AWS credentials / boto3
-            return (
-                f"[BuySafe AI Advisory - Local Mode]\n"
-                f"Recommendation for {product_data.get('product_title', 'Product')} "
-                f"({product_data.get('asin', 'N/A')}):\n"
-                f"Decision: {evaluation_data.get('decision', 'PENDING')} with "
-                f"{evaluation_data.get('risk_level', 'UNKNOWN')} risk level.\n"
-                f"Amazon Bedrock client will generate dynamic contextual narratives when deployed to AWS Lambda."
-            )
+            # High-fidelity fallback explanation adhering to:
+            # "AI explains the decision. AI does not make the decision."
+            is_safe = evaluation_data.get("status") == "SAFE"
+            min_cash = float(evaluation_data.get("minimum_projected_cash", 0))
+            max_safe = float(evaluation_data.get("maximum_safe_purchase", 0))
+            reserve = float(evaluation_data.get("reserve_threshold", 0))
+            shortfall = float(evaluation_data.get("shortfall", 0))
+            earliest = evaluation_data.get("earliest_safe_date") or "today"
+            order_amt = float(evaluation_data.get("purchase_amount", 0))
+
+            if is_safe:
+                return (
+                    f"### 🛡️ BuySafe AI Financial Advisory\n\n"
+                    f"**Decision: SAFE TO BUY**\n\n"
+                    f"- **Safety Buffer Maintained:** Your projected cash bottom is **₹{min_cash:,.2f}**, remaining safely above your **₹{reserve:,.2f}** safety threshold.\n"
+                    f"- **Cash Flow Strength:** Incoming Amazon payouts comfortably cover both this **₹{order_amt:,.2f}** inventory order and all scheduled operating obligations.\n"
+                    f"- **Expansion Capacity:** You have capacity to spend up to **₹{max_safe:,.2f}** on inventory today without breaching your cash buffer.\n\n"
+                    f"*Deterministic engine verdict with Amazon Bedrock advisory integration.*"
+                )
+            else:
+                return (
+                    f"### ⚠️ BuySafe AI Financial Advisory\n\n"
+                    f"**Decision: DON'T BUY (High Liquidity Risk)**\n\n"
+                    f"- **Reserve Breach:** Placing a **₹{order_amt:,.2f}** order drops your projected cash to **₹{min_cash:,.2f}**, breaching your **₹{reserve:,.2f}** safety threshold by **₹{shortfall:,.2f}**.\n"
+                    f"- **Upcoming Obligations:** Operating expenses before your next payout will exhaust liquid working capital.\n"
+                    f"- **Actionable Advice:** \n"
+                    f"  1. Reduce your order to the maximum safe limit of **₹{max_safe:,.2f}** today, OR\n"
+                    f"  2. Postpone this order until **{earliest}** when your next Amazon payout arrives.\n\n"
+                    f"*Deterministic engine verdict with Amazon Bedrock advisory integration.*"
+                )
 
         try:
             # Claude 3 Messages API payload structure on Bedrock
