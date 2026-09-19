@@ -74,3 +74,7 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+
+# Local reference media
+*.mp4
+*.webp
