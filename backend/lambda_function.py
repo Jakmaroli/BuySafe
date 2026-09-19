@@ -17,6 +17,16 @@ try:
 except ImportError:
     from backend.engine import evaluate_purchase
 
+try:
+    from bedrock import BedrockExplainer
+    explainer = BedrockExplainer()
+except Exception:
+    try:
+        from backend.bedrock import BedrockExplainer
+        explainer = BedrockExplainer()
+    except Exception:
+        explainer = None
+
 
 def lambda_handler(event, context):
 
@@ -152,6 +162,27 @@ def lambda_handler(event, context):
 
         result["analysis_date"] = analysis_date
         result["timestamp"] = datetime.now().isoformat()
+
+        # -----------------------------
+        # Generate AI Bedrock explanation
+        # "AI explains the decision. AI does not make the decision."
+        # -----------------------------
+        ai_explanation = None
+        if explainer:
+            try:
+                ai_explanation = explainer.generate_explanation(
+                    product_data={
+                        "product_title": "Inventory Restock Batch",
+                        "purchase_amount": float(purchase_amount),
+                        "purchase_date": purchase_date,
+                    },
+                    evaluation_data=result
+                )
+            except Exception as exc:
+                print(f"Bedrock explainer note: {exc}")
+                ai_explanation = None
+
+        result["ai_explanation"] = ai_explanation
 
         return response(200, result)
 
